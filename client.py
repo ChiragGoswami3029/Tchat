@@ -42,27 +42,25 @@ async def main():
     host = "localhost"
     port = 8765
 
-    username = input("Enter your username: ").strip()
-    if not username:
-        print("Username cannot be empty.")
-        return
-
-    print(f"Connecting to server as '{username}'...")
-
     try:
         async with websockets.connect(f"ws://{host}:{port}") as websocket:
-            # Send username first — server expects this
-            await websocket.send(username)
+            
+            # Keep asking for username until it's accepted
+            while True:
+                username = input("Enter your username: ").strip()
+                if not username:
+                    print("Username cannot be empty.")
+                    continue
 
-            # Check for error from server (e.g. username taken)
-            first_response = str(await websocket.recv())
+                await websocket.send(username)
+                first_response = str(await websocket.recv())
 
-            if first_response.startswith("ERROR"):
-                print(first_response)
-                return
-
-            # Show welcome message
-            print(first_response)
+                if first_response.startswith("ERROR"):
+                    print(first_response)
+                    continue  # ask again, same connection
+                else:
+                    print(first_response)
+                    break  # username accepted, move on
 
             # Run both tasks at the same time
             receive_task = asyncio.create_task(receive_messages(websocket))

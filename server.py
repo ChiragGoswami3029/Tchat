@@ -3,7 +3,7 @@ import websockets
 from datetime import datetime
 
 # Store connected clients: { "username": websocket }
-connected_clients = {}
+connected_clients = {"username": websockets}
 
 def get_time():
     return datetime.now().strftime("%H:%M")
@@ -20,14 +20,21 @@ async def handler(websocket):
     username = None
 
     try:
-        # First message from client must be their username
-        username = await websocket.recv()
-        username = username.strip()
+        # NEW - keeps asking until a valid username is given
+        while True:
+          username = await websocket.recv()
+          username = username.strip()
 
-        # Check if username is already taken
-        if username in connected_clients:
-            await websocket.send("ERROR: Username already taken. Please reconnect with a different name.")
-            return
+          if not username:
+           await websocket.send("ERROR: Username cannot be empty.")
+          continue
+
+          if username in connected_clients:
+            await websocket.send("ERROR: Username already taken.")
+          continue
+
+          break  # valid username, exit loop and proceed
+        
 
         # Register the user
         connected_clients[username] = websocket
